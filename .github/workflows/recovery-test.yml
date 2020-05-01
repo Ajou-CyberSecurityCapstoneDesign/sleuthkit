@@ -11,13 +11,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: bootstrap
+      run: ./bootstrap
     - name: configure
       run: ./configure
     - name: make
       run: make
     - name: make install
       run: make install
-    - name: bootstrap
-      run: ./bootstrap
     - name: sleuthkit
       run: sleuthkit
