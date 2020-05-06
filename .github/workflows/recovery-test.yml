@@ -17,10 +17,8 @@ jobs:
       run: ./configure
     - name: make
       run: make
-    - name: make install
-      run: make install
-    - name: sleuthkit
-      run: sleuthkit
+    - name: check tsk
+      run: ./bin/tsk_recover -V
       
   build-windows:
     name: Build windows
@@ -28,6 +26,8 @@ jobs:
     
     steps:
       - uses: actions/checkout@v2
+        
+      - shell: cmd
       - name: MSBuild environment initialize
         run: vcvars32.bat
       - name: build
