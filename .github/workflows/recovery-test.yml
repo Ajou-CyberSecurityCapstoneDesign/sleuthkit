@@ -14,18 +14,13 @@ jobs:
     - name: bootstrap
       run: ./bootstrap
     - name: configure
-      run: ./configure
+      run: ./configure --prefix=./bin
     - name: make
       run: make
-    - name: check tsk
+    - name: make install
       run: |
-        ls -l
-        cd tsk
-        pwd
-        ls -l
-        cd dist
-        ls -l
-        ./tsk/tsk_recover -V
+        make install
+        ./bin/tsk_recover -V
       
   build-windows:
     name: Build windows
