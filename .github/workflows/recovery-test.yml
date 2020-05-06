@@ -19,7 +19,7 @@ jobs:
       run: make
     - name: check tsk
       run: |
-        ls - l
+        ls -l
         cd tsk
         pwd
         ls -l
@@ -35,7 +35,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: build
         shell: cmd
-        run: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\devenv.com .\win32\tsk-win.sln /Build "Debug_NoLibs|Win32"
+        run: "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\devenv.com" .\win32\tsk-win.sln /Build "Debug_NoLibs|Win32"
       - name: check tsk
         shell: cmd
         run: .\win32\Debug_NoLibs\tsk_recover.exe -V
