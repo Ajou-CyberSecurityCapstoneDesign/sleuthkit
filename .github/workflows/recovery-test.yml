@@ -20,7 +20,12 @@ jobs:
     - name: make install
       run: make install
     - name: check tsk
-      run: tsk_recover -V
+      run: |
+        cd bin
+        ls -l
+        cd lib
+        ls -l
+        ./tsk_recover -V
       
   build-windows:
     name: Build windows
