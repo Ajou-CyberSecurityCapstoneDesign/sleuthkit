@@ -18,7 +18,14 @@ jobs:
     - name: make
       run: make
     - name: check tsk
-      run: ./bin/tsk_recover -V
+      run: |
+        ls - l
+        cd tsk
+        pwd
+        ls -l
+        cd dist
+        ls -l
+        ./tsk/tsk_recover -V
       
   build-windows:
     name: Build windows
@@ -28,9 +35,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: build
         shell: cmd
-        run: |
-          "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars32.bat"
-          devenv .\win32\tsk-win.sln /Build "Debug_NoLibs|Win32" #/Project libtsk]
+        run: C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\devenv.com .\win32\tsk-win.sln /Build "Debug_NoLibs|Win32"
       - name: check tsk
         shell: cmd
         run: .\win32\Debug_NoLibs\tsk_recover.exe -V
