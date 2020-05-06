@@ -14,16 +14,16 @@ jobs:
     - name: bootstrap
       run: ./bootstrap
     - name: configure
-      run: ./configure --prefix=$GITHUB_WORKSPACE/bin
+      run: ./configure --prefix=$GITHUB_WORKSPACE/local
     - name: make
       run: make
     - name: make install
       run: make install
     - name: check tsk
       run: |
-        cd bin
+        cd local
         ls -l
-        cd lib
+        cd bin
         ls -l
         ./tsk_recover -V
       
@@ -36,7 +36,7 @@ jobs:
       - name: build
         shell: cmd
         run: |
-          "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\devenv.com" .\win32\tsk-win.sln /Build "Debug_NoLibs|Win32"
+          "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\devenv" .\win32\tsk-win.sln /Build "Debug_NoLibs|Win32"
       - name: check tsk
         shell: cmd
         run: .\win32\Debug_NoLibs\tsk_recover.exe -V
