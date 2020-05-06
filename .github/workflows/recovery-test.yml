@@ -14,13 +14,13 @@ jobs:
     - name: bootstrap
       run: ./bootstrap
     - name: configure
-      run: ./configure --prefix=$GITHUB_WORKSPACE/sleuthkit/bin
+      run: ./configure --prefix=$GITHUB_WORKSPACE/bin
     - name: make
       run: make
     - name: make install
-      run: |
-        make install
-        ./bin/tsk_recover -V
+      run: make install
+    - name: check tsk
+      run: tsk_recover -V
       
   build-windows:
     name: Build windows
