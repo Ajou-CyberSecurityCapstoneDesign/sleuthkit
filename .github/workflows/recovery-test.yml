@@ -5,8 +5,8 @@ on:
   pull_request:
 
 jobs:
-  build:
-
+  build-linux:
+    name: Build linux
     runs-on: ubuntu-latest
 
     steps:
@@ -21,3 +21,16 @@ jobs:
       run: make install
     - name: sleuthkit
       run: sleuthkit
+      
+  build-windows:
+    name: Build windows
+    runs-on: ['self-hosted', 'windows']
+    
+    steps:
+      - uses: actions/checkout@v2
+      - name: MSBuild environment initialize
+        run: vcvars32.bat
+      - name: build
+        run: devenv .\win32\tsk-win.sln /Build "Debug_NoLibs|Win32" #/Project libtsk
+      - name: check tsk
+        run: .\win32\Debug_NoLibs\tsk_recover.exe -V
