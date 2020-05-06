@@ -29,7 +29,7 @@ jobs:
       - name: build
         shell: cmd
         run: |
-          vcvars32.bat
+          "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars32.bat"
           devenv .\win32\tsk-win.sln /Build "Debug_NoLibs|Win32" #/Project libtsk]
       - name: check tsk
         shell: cmd
