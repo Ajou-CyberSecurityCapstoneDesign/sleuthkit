@@ -26,11 +26,11 @@ jobs:
     
     steps:
       - uses: actions/checkout@v2
-        
-      - shell: cmd
-      - name: MSBuild environment initialize
-        run: vcvars32.bat
       - name: build
-        run: devenv .\win32\tsk-win.sln /Build "Debug_NoLibs|Win32" #/Project libtsk
+        shell: cmd
+        run: |
+          vcvars32.bat
+          devenv .\win32\tsk-win.sln /Build "Debug_NoLibs|Win32" #/Project libtsk]
       - name: check tsk
+        shell: cmd
         run: .\win32\Debug_NoLibs\tsk_recover.exe -V
