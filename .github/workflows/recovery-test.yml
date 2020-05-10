@@ -34,6 +34,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: build
+        env:
+          JDK_HOME: 'C:\Program Files\Java\jdk-14.0.1'
         shell: cmd
         run: |
           "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\devenv" .\win32\tsk-win.sln /Build "Debug_NoLibs|Win32"
