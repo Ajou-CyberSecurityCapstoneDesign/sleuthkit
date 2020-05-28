@@ -13,9 +13,11 @@
 #include <locale.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <time.h>
 
 static TSK_TCHAR *progname;
 
+time_t target_time = 0;
 static void
 usage()
 {
@@ -42,7 +44,8 @@ usage()
         "\t-B pool_volume_block: Starting block (for pool volumes only)\n");
     tsk_fprintf(stderr, 
         "\t-d dir_inum: Directory inum to recover from (must also specify a specific partition using -o or there must not be a volume system)\n");
-
+    tsk_fprintf(stderr,
+        "\t-t time: how long days the file has been deleted (must integer)\n");
     exit(1);
 }
 
@@ -338,7 +341,8 @@ TSK_RETVAL_ENUM TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
     else if ((fs_file->meta == NULL) || (fs_file->meta->size == 0))
         return TSK_OK;
 
-    writeFile(fs_file, path);
+    if(fs_file->meta->time2.ext2.dtime >= target_time)
+        writeFile(fs_file, path);
     return TSK_OK;
 }
 
@@ -394,7 +398,7 @@ TskRecover::openFs(TSK_OFF_T a_soffset, TSK_FS_TYPE_ENUM fstype, TSK_POOL_TYPE_E
         }
     }
     return TSK_OK;
-}
+}                             
 
 uint8_t
 TskRecover::findFiles(TSK_INUM_T a_dirInum)
@@ -423,7 +427,6 @@ main(int argc, char **argv1)
     TSK_TCHAR *cp;
     TSK_FS_DIR_WALK_FLAG_ENUM walkflag = TSK_FS_DIR_WALK_FLAG_UNALLOC;
     TSK_INUM_T dirInum = 0;
-
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
@@ -438,7 +441,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("ab:B:d:ef:i:o:P:vV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("abt:B:d:ef:i:o:P:vV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -537,7 +540,21 @@ main(int argc, char **argv1)
         case _TSK_T('V'):
             tsk_version_print(stdout);
             exit(0);
+
+        case _TSK_T('t'):
+            unsigned int days = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || days < 0) {
+                TFPRINTF(stderr,
+                    _TSK_T
+                    ("invalid argument: time infomation must be positive: %s\n"),
+                    OPTARG);
+                usage();
+            }
+            time(&target_time);
+            target_time -= (60*60*24)*days;
+            break;
         }
+        
     }
 
     /* We need at least one more argument */
