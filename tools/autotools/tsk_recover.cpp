@@ -71,7 +71,7 @@ private:
     char m_vsName[FILENAME_MAX];
     bool m_writeVolumeDir;
     int m_fileCount;
-    TSK_FS_INFO * m_fs_info;
+    TSK_FS_INFO *  m_fs_info;
 };
 
 
@@ -341,8 +341,13 @@ TSK_RETVAL_ENUM TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
     else if ((fs_file->meta == NULL) || (fs_file->meta->size == 0))
         return TSK_OK;
 
-    if(fs_file->meta->time2.ext2.dtime >= target_time)
+    if(fs_file->fs_info->ftype == TSK_FS_TYPE_EXT4){
+        if(fs_file->meta->time2.ext2.dtime >= target_time || fs_file->meta->atime >= target_time)
         writeFile(fs_file, path);
+    }
+    else{
+        writeFile(fs_file, path);
+    }
     return TSK_OK;
 }
 
@@ -409,6 +414,7 @@ TskRecover::findFiles(TSK_INUM_T a_dirInum)
     else
         retval = findFilesInFs(m_fs_info);
 
+   
     printf("Files Recovered: %d\n", m_fileCount);
     return retval;
 }
