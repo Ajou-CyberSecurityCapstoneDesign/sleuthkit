@@ -632,8 +632,6 @@ extern "C" {
 
     } EXT2FS_JINFO;
 
-
-
     /*
      * Structure of an ext2fs file system handle.
      */
@@ -671,9 +669,16 @@ extern "C" {
         TSK_INUM_T a_addr);
     extern uint8_t ext2fs_jentry_walk(TSK_FS_INFO *, int,
         TSK_FS_JENTRY_WALK_CB, void *);
+    extern TSK_DADDR_T ext2fs_journal_get_block(TSK_FS_INFO *, int,
+    TSK_FS_JENTRY_WALK_CB, void *, uint32_t);
+    extern ext2fs_inode* ext2fs_journal_get_meta(TSK_FS_INFO *, int,
+        TSK_FS_JENTRY_WALK_CB, void *, uint32_t, uint32_t);
     extern uint8_t ext2fs_jblk_walk(TSK_FS_INFO *, TSK_DADDR_T,
         TSK_DADDR_T, int, TSK_FS_JBLK_WALK_CB, void *);
     extern uint8_t ext2fs_jopen(TSK_FS_INFO *, TSK_INUM_T);
+    static uint8_t ext2fs_group_load(EXT2FS_INFO *, EXT2_GRPNUM_T);
+    static void ext4_fsstat_datablock_helper(TSK_FS_INFO *, FILE *, unsigned int , TSK_DADDR_T, int);
+
 
 #ifdef __cplusplus
 }

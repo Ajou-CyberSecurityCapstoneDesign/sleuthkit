@@ -21,8 +21,6 @@
 #include "tsk_fs_i.h"
 #include "tsk_ext2fs.h"
 
-
-
 /* Everything in the journal is in big endian */
 #define big_tsk_getu32(x)	\
 	(uint32_t)((((uint8_t *)x)[3] <<  0) + \
@@ -98,7 +96,6 @@ ext2fs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
         return 1;
     }
     jinfo->j_inum = inum;
-
     jinfo->fs_file = tsk_fs_file_open_meta(fs, NULL, inum);
     if (!jinfo->fs_file) {
         free(jinfo);
@@ -144,7 +141,6 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
 
     // clean up any error messages that are lying around
     tsk_error_reset();
-
 
     if ((jinfo == NULL) || (jinfo->fs_file == NULL)
         || (jinfo->fs_file->meta == NULL)) {
@@ -474,9 +470,395 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
     return 0;
 }
 
+TSK_DADDR_T ext2fs_journal_get_block(TSK_FS_INFO * fs, int flags,
+    TSK_FS_JENTRY_WALK_CB action, void *ptr, uint32_t recover_blk)
+{
+    EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) fs;
+    EXT2FS_JINFO *jinfo = ext2fs->jinfo;
+    char *journ;
+    TSK_FS_LOAD_FILE buf1;
+    TSK_DADDR_T i;
+//    int b_desc_seen = 0;
+    ext2fs_journ_sb *journ_sb = NULL;
+    ext4fs_journ_commit_head *commit_head;
+
+    ext2fs_inode *recover_meta;
+    recover_meta = (ext2fs_inode *) tsk_malloc(sizeof(ext2fs_inode));
+    uint32_t tmp;
+    int j=0;
 
 
+    // clean up any error messages that are lying around
+    tsk_error_reset();
 
+    if ((jinfo == NULL) || (jinfo->fs_file == NULL)
+        || (jinfo->fs_file->meta == NULL)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("ext2fs_jentry_walk: journal is not open");
+        return 0;
+    }
+
+    if ((TSK_DADDR_T)jinfo->fs_file->meta->size !=
+        (jinfo->last_block + 1) * jinfo->bsize) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr
+            ("ext2fs_jentry_walk: journal file size is different from \nsize reported in journal super block");
+        return 0;
+    }
+
+    /* Load the journal into a buffer */
+    buf1.left = buf1.total = (size_t) jinfo->fs_file->meta->size;
+    journ = buf1.cur = buf1.base = tsk_malloc(buf1.left);
+    if (journ == NULL) {
+        return 0;
+    }
+    
+    if (tsk_fs_file_walk(jinfo->fs_file,
+            0, tsk_fs_load_file_action, (void *) &buf1)) {
+        free(journ);
+        return 0;
+    }
+
+    if (buf1.left > 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_FWALK);
+        tsk_error_set_errstr
+            ("ext2fs_jentry_walk: Buffer not fully copied");
+        free(journ);
+        return 0;
+    }
+
+
+    /* Process the journal 
+     * Cycle through each block
+     */
+
+    /* Note that 'i' is incremented when we find a descriptor block and
+     * process its contents. */
+    for (i = 0; i < jinfo->last_block; i++) {
+        ext2fs_journ_head *head;
+        ext2fs_journ_head *tmp;
+        tmp = (ext2fs_journ_head *) malloc(sizeof(ext2fs_journ_head));
+
+        /* if there is no magic, then it is a normal block 
+         * These should be accounted for when we see its corresponding
+         * descriptor.  We get the 'unknown' when its desc has
+         * been reused, it is in the next batch to be overwritten,
+         * or if it has not been used before
+         */
+        head = (ext2fs_journ_head *) & journ[i * jinfo->bsize];
+        if (big_tsk_getu32(head->magic) != EXT2_JMAGIC) {
+            if (i < jinfo->first_block) {
+                tsk_printf("%" PRIuDADDR ":\tUnused\n", i);
+            }
+
+#if 0
+#endif
+            else {
+                //tsk_printf("%" PRIuDADDR ":\tUnallocated FS Block Unknown\n", i);
+            }
+        }
+
+        /* The descriptor describes the FS blocks that follow it */
+        else if (big_tsk_getu32(head->entry_type) == EXT2_J_ETYPE_DESC) {
+            ext2fs_journ_dentry *dentry;
+            int unalloc = 0;
+//            b_desc_seen = 1;
+
+            /* Is this an unallocated journ block or sequence */
+            if ((i < jinfo->start_blk) ||
+                (big_tsk_getu32(head->entry_seq) < jinfo->start_seq))
+                unalloc = 1;
+
+
+            dentry =
+                (ext2fs_journ_dentry *) ((uintptr_t) head +
+                sizeof(ext2fs_journ_head));;
+
+            /* Cycle through the descriptor entries to account for the journal blocks */
+            while ((uintptr_t) dentry <=
+                ((uintptr_t) head + jinfo->bsize -
+                    sizeof(ext2fs_journ_head))) {
+                ext2fs_journ_head *head2;
+                TSK_OFF_T off;
+                ssize_t cnt;
+
+                /* Our counter is over the end of the journ */
+                if (++i > jinfo->last_block)
+                    break;
+
+
+                /* Look at the block that this entry refers to */
+                head2 = (ext2fs_journ_head *) & journ[i * jinfo->bsize];
+                if ((big_tsk_getu32(head2->magic) == EXT2_JMAGIC) &&
+                    (big_tsk_getu32(head2->entry_seq) >=
+                        big_tsk_getu32(head->entry_seq))) {
+                    i--;
+                    break;
+                }
+
+                if(big_tsk_getu32(dentry->fs_blk) == recover_blk){
+                    /*백업된 저널 여러개면 가장 마지막 seq 복원
+                    if(tmp->entry_seq > head->entry_seq){//이전 seq보다 최근일시, 
+                        j=0;
+                    }
+                    else
+                        continue; //이전 백업보다 더 이전 백업본, 
+                    
+                   if(j==0){
+                        tmp=head2->entry_seq;
+                    }*/
+                    return i;
+                    
+                }
+            }
+        }
+        
+    }
+
+    if(i==jinfo->last_block){
+        i=0;
+    }
+
+    free(journ);
+    return i;
+}
+
+ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
+    TSK_FS_JENTRY_WALK_CB action, void *ptr, uint32_t recover_blk, uint32_t recover_seq)
+{
+ EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) fs;
+    EXT2FS_JINFO *jinfo = ext2fs->jinfo;
+    uint8_t *journ;
+    TSK_FS_LOAD_FILE buf1;
+    ext2fs_journ_head *head;
+    TSK_DADDR_T start;
+    TSK_DADDR_T end;
+
+    start = ext2fs_journal_get_block(fs, flags, action, ptr,recover_blk);
+    end = start;
+
+    // clean up any error messages that are lying around
+    tsk_error_reset();
+
+    if ((jinfo == NULL) || (jinfo->fs_file == NULL)
+        || (jinfo->fs_file->meta == NULL)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("ext2fs_jblk_walk: journal is not open");
+        return NULL;
+    }
+
+    if (jinfo->last_block < end) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr("ext2fs_jblk_walk: end is too large ");
+        return NULL;
+    }
+
+    if (start != end) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr
+            ("ext2fs_blk_walk: only start == end is currently supported");
+        return NULL;
+    }
+
+    if ((TSK_DADDR_T)jinfo->fs_file->meta->size !=
+        (jinfo->last_block + 1) * jinfo->bsize) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
+        tsk_error_set_errstr
+            ("ext2fs_jblk_walk: journal file size is different from size reported in journal super block");
+        return NULL;
+    }
+
+    /* Load into buffer and then process it 
+     * Only get the minimum needed
+     */
+    buf1.left = buf1.total = (size_t) ((end + 1) * jinfo->bsize);
+    buf1.cur = buf1.base = tsk_malloc(buf1.left);
+    journ = (uint8_t*) buf1.cur;
+    if (journ == NULL) {
+        return NULL;
+    }
+
+    if (tsk_fs_file_walk(jinfo->fs_file, 0, tsk_fs_load_file_action,
+            (void *) &buf1)) {
+        free(journ);
+        return NULL;
+    }
+
+    if (buf1.left > 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_FWALK);
+        tsk_error_set_errstr("ext2fs_jblk_walk: Buffer not fully copied");
+        free(journ);
+        return NULL;
+    }
+
+    head = (ext2fs_journ_head *) & journ[end * jinfo->bsize];
+    
+    /* Check if our target block is a journal data structure.
+     * 
+     * If not, 
+     * we need to look for its descriptor to see if it has been
+     * escaped
+     */
+    if (big_tsk_getu32(head->magic) != EXT2_JMAGIC) {
+        TSK_DADDR_T i;
+
+        /* cycle backwards until we find a desc block */
+        for (i = end - 1; i > 0; i--) {
+            ext2fs_journ_dentry *dentry;
+            TSK_DADDR_T diff;
+
+            head = (ext2fs_journ_head *) & journ[i * jinfo->bsize];
+
+            if (big_tsk_getu32(head->magic) != EXT2_JMAGIC)
+                continue;
+
+            /* If we get a commit, then any desc we find will not
+             * be for our block, so forget about it */
+            if (big_tsk_getu32(head->entry_type) == EXT2_J_ETYPE_COM)
+                break;
+
+            /* Skip any other data structure types */
+            if (big_tsk_getu32(head->entry_type) != EXT2_J_ETYPE_DESC)
+                continue;
+
+            /* We now have the previous descriptor 
+             *
+             * NOTE: We have no clue if this is the correct 
+             * descriptor if it is not the current 'run' of 
+             * transactions, but this is the best we can do
+             */
+
+                diff = end - i;
+
+                dentry =
+                (ext2fs_journ_dentry *) (&journ[i * jinfo->bsize] +
+                sizeof(ext2fs_journ_head));
+
+                while ((uintptr_t) dentry <=
+                    ((uintptr_t) & journ[(i + 1) * jinfo->bsize] -
+                    sizeof(ext2fs_journ_head))) {
+
+                    if (--diff == 0) {
+                        if (big_tsk_getu32(dentry->flag) & EXT2_J_DENTRY_ESC) {
+                            journ[end * jinfo->bsize] = 0xC0;
+                            journ[end * jinfo->bsize + 1] = 0x3B;
+                            journ[end * jinfo->bsize + 2] = 0x39;
+                            journ[end * jinfo->bsize + 3] = 0x98;
+                        }
+                        break;
+                    }
+
+                    /* If the SAMEID value is set, then we advance by the size of the entry, otherwise add 16 for the ID */
+                    if (big_tsk_getu32(dentry->flag) & EXT2_J_DENTRY_SAMEID)
+                        dentry =
+                            (ext2fs_journ_dentry *) ((uintptr_t) dentry +
+                            sizeof(ext2fs_journ_dentry));
+                    else
+                        dentry =
+                            (ext2fs_journ_dentry *) ((uintptr_t) dentry +
+                            sizeof(ext2fs_journ_dentry) + 16);
+
+                }
+            break;
+        
+        }
+    }
+
+/*
+    if (fwrite(&journ[end * jinfo->bsize]+recover_seq, ext2fs->inode_size, 1, stdout) != 1) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_WRITE);
+        tsk_error_set_errstr
+            ("ext2fs_jblk_walk: error writing buffer block");
+        free(journ);
+        return 1;
+    }
+    */
+
+    ext2fs_inode *recover_meta;
+    recover_meta = (ext2fs_inode *) malloc(sizeof(ext2fs_inode));
+    uint tmp;
+    tmp=recover_seq;
+    strncpy(recover_meta->i_mode, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
+    tmp+=sizeof(uint16_t);
+    strncpy(recover_meta->i_uid, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
+    tmp+=sizeof(uint16_t);
+    strncpy(recover_meta->i_size, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
+    strncpy(recover_meta->i_atime, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
+    strncpy(recover_meta->i_ctime, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
+    strncpy(recover_meta->i_mtime, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
+    strncpy(recover_meta->i_dtime, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
+    strncpy(recover_meta->i_gid, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
+    tmp+=sizeof(uint16_t);
+    strncpy(recover_meta->i_nlink, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
+    tmp+=sizeof(uint16_t);
+    strncpy(recover_meta->i_nblk, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
+    strncpy(recover_meta->i_flags, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
+
+    strncpy(recover_meta->i_f5, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
+
+    strncpy(recover_meta->i_block, &journ[end * jinfo->bsize]+tmp,sizeof(uint8_t)*60);
+    tmp+=sizeof(uint8_t)*60;
+    strncpy(recover_meta->i_generation, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
+    strncpy(recover_meta->i_file_acl, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
+    strncpy(recover_meta->i_size_high, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
+    strncpy(recover_meta->i_faddr, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
+    /*
+ 
+    strncpy(recover_meta->i_frag, &journ[end * jinfo->bsize]+tmp,sizeof(uint8_t));
+    tmp+=sizeof(uint8_t);
+    strncpy(recover_meta->i_fsize, &journ[end * jinfo->bsize]+tmp,sizeof(uint8_t));
+    tmp+=sizeof(uint8_t);
+    strncpy(recover_meta->i_uid_high, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
+    tmp+=sizeof(uint16_t);
+    strncpy(recover_meta->i_gid_high, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
+    tmp+=sizeof(uint16_t);
+    strncpy(recover_meta->f7, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
+    */
+
+    tmp+=sizeof(uint8_t)*12;
+    strncpy(recover_meta->i_extra_isize, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
+    tmp+=sizeof(uint16_t);
+    strncpy(recover_meta->i_pad1, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
+    tmp+=sizeof(uint16_t);
+    strncpy(recover_meta->i_ctime_extra, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
+    strncpy(recover_meta->i_mtime_extra, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
+    strncpy(recover_meta->i_atime_extra, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
+    strncpy(recover_meta->i_crtime, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
+    strncpy(recover_meta->i_crtime_extra, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
+    strncpy(recover_meta->i_version_hi, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+
+    
+    //printf("%u\n",tsk_getu32(fs->endian,recover_meta->i_crtime));
+
+    return recover_meta;
+}
 
 /* 
  * Limitations for 1st version: start must equal end and action is ignored
@@ -492,6 +874,9 @@ ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
     uint8_t *journ;
     TSK_FS_LOAD_FILE buf1;
     ext2fs_journ_head *head;
+
+    printf("\n start - %lu\n",start);
+    printf("\n end - %u \n",end );
 
     // clean up any error messages that are lying around
     tsk_error_reset();
