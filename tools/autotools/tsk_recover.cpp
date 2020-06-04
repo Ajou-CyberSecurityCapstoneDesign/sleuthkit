@@ -17,7 +17,8 @@
 
 static TSK_TCHAR *progname;
 
-time_t target_time = 0;
+
+time_t recover_time = 0;
 static void
 usage()
 {
@@ -342,7 +343,7 @@ TSK_RETVAL_ENUM TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
         return TSK_OK;
 
     if(fs_file->fs_info->ftype == TSK_FS_TYPE_EXT4){
-        if(fs_file->meta->time2.ext2.dtime >= target_time || fs_file->meta->atime >= target_time)
+        if(fs_file->meta->time2.ext2.dtime >= recover_time || fs_file->meta->atime >= recover_time)
         writeFile(fs_file, path);
     }
     else{
@@ -556,8 +557,10 @@ main(int argc, char **argv1)
                     OPTARG);
                 usage();
             }
-            time(&target_time);
-            target_time -= (60*60*24)*days;
+            time(&recover_time);
+            recover_time -= (60*60*24)*days;
+            recover_time /=(60*60*24);
+            recover_time *= (60*60*24);
             break;
         }
         
