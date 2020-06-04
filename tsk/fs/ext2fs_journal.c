@@ -33,6 +33,8 @@
  *
  */
 
+
+
 static TSK_WALK_RET_ENUM
 load_sb_action(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
     char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *ptr)
@@ -772,16 +774,6 @@ ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
         }
     }
 
-/*
-    if (fwrite(&journ[end * jinfo->bsize]+recover_seq, ext2fs->inode_size, 1, stdout) != 1) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_WRITE);
-        tsk_error_set_errstr
-            ("ext2fs_jblk_walk: error writing buffer block");
-        free(journ);
-        return 1;
-    }
-    */
 
     ext2fs_inode *recover_meta;
     recover_meta = (ext2fs_inode *) malloc(sizeof(ext2fs_inode));
@@ -855,7 +847,7 @@ ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
     strncpy(recover_meta->i_version_hi, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
 
     
-    //printf("%u\n",tsk_getu32(fs->endian,recover_meta->i_crtime));
+    printf("%u\n",tsk_getu32(fs->endian,recover_meta->i_mtime));
 
     return recover_meta;
 }
