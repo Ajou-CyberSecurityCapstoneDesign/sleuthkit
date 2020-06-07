@@ -774,10 +774,15 @@ ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
         }
     }
 
-
     ext2fs_inode *recover_meta;
-    recover_meta = (ext2fs_inode *) malloc(sizeof(ext2fs_inode));
-    unsigned int tmp;
+    unsigned int size=0;
+    size =
+        ext2fs->inode_size >
+        sizeof(ext2fs_inode) ? ext2fs->inode_size : sizeof(ext2fs_inode);
+
+    recover_meta = (ext2fs_inode *) malloc(size);
+
+    uint tmp;
     tmp=recover_seq;
     strncpy(recover_meta->i_mode, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
     tmp+=sizeof(uint16_t);
@@ -804,9 +809,15 @@ ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
 
     strncpy(recover_meta->i_f5, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
-
+   for(int i=0;i<15;i++){
+            strncpy(recover_meta->i_block[i], &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+            tmp+=sizeof(uint32_t);
+    
+    }
+    /*
     strncpy(recover_meta->i_block, &journ[end * jinfo->bsize]+tmp,sizeof(uint8_t)*60);
     tmp+=sizeof(uint8_t)*60;
+*/
     strncpy(recover_meta->i_generation, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
     strncpy(recover_meta->i_file_acl, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
@@ -816,7 +827,6 @@ ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
     strncpy(recover_meta->i_faddr, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
     /*
- 
     strncpy(recover_meta->i_frag, &journ[end * jinfo->bsize]+tmp,sizeof(uint8_t));
     tmp+=sizeof(uint8_t);
     strncpy(recover_meta->i_fsize, &journ[end * jinfo->bsize]+tmp,sizeof(uint8_t));
@@ -845,9 +855,6 @@ ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
     strncpy(recover_meta->i_crtime_extra, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
     strncpy(recover_meta->i_version_hi, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
-
-    
-    printf("%u\n",tsk_getu32(fs->endian,recover_meta->i_mtime));
 
     return recover_meta;
 }
