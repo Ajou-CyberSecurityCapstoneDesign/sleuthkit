@@ -442,8 +442,9 @@ TSK_FS_META *ext4_jrecover(TSK_FS_INFO *fs, TSK_FS_META * fs_meta, TSK_INUM_T ba
    
    //printf("meta : %u\n", fs_meta->mtime);
 
-    tsk_fs_file_close(fs);
-    ext2fs_close(ext2fs);
+   tsk_release_lock(&ext2fs->lock);
+   // tsk_fs_file_close(fs);
+   // ext2fs_close(ext2fs);
     //복원 함수로 전달
     return fs_meta;
 }
