@@ -402,7 +402,6 @@ TSK_FS_META *ext4_jrecover(TSK_FS_INFO *fs, TSK_FS_META * fs_meta, TSK_INUM_T ba
     TSK_INUM_T inum;
     inum = fs->journ_inum;
 
-    back_inum = 13;
     EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) fs;
 
      /*inum 번호로 몇번 블록의 몇번째 inode 인지 계산*/
