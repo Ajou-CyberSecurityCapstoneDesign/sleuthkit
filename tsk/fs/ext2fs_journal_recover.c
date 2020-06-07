@@ -396,7 +396,7 @@ uint32_t ext2fs_get_blk(TSK_FS_INFO *fs,uint32_t recover_grp){
 
 //삭제된 inode table 저널 영역에서 확인하여 반환해주는 함수
 
-ext2fs_inode *ext4_jrecover(TSK_FS_INFO *fs, TSK_INUM_T back_inum){
+TSK_FS_META *ext4_jrecover(TSK_FS_INFO *fs, TSK_FS_META * fs_meta, TSK_INUM_T back_inum){
 
     ext2fs_inode *recover_meta;
     TSK_INUM_T inum;
@@ -414,29 +414,39 @@ ext2fs_inode *ext4_jrecover(TSK_FS_INFO *fs, TSK_INUM_T back_inum){
     
     if((recover_blk=ext2fs_get_blk(fs,recover_grp))<0){
         tsk_error_print(stderr);
-        fs->close(fs);
+        ext2fs_close(ext2fs);
+        tsk_fs_file_close(fs);
         exit(1);
     }
     
     if (fs->jopen(fs, inum)) {
         tsk_error_print(stderr);
-        fs->close(fs);
+        tsk_fs_file_close(fs);
+        ext2fs_close(ext2fs);
         exit(1);
     }
 
      if ((recover_meta = ext2fs_journal_get_meta(fs, 0, 0, NULL, recover_blk, recover_seq))==NULL) {
         tsk_error_print(stderr);
-        fs->close(fs);
+        tsk_fs_file_close(fs);
+        ext2fs_close(ext2fs);
         exit(1);
     }
-    printf("%u\n",tsk_getu32(fs->endian,recover_meta->i_mtime));
+    //printf("%u\n",tsk_getu32(fs->endian,recover_meta->i_mtime));
+
+    if(ext2fs_dinode_copy(ext2fs, fs_meta, back_inum,recover_meta)){
+        tsk_error_print(stderr);
+        tsk_fs_file_close(fs);
+        ext2fs_close(ext2fs);
+        exit(1);
+    }
    
+   //printf("meta : %u\n", fs_meta->mtime);
 
-    fs->close(fs);
-    exit(0);
+    tsk_fs_file_close(fs);
+    ext2fs_close(ext2fs);
     //복원 함수로 전달
-    return recover_meta;
-
+    return fs_meta;
 }
 /*
 
