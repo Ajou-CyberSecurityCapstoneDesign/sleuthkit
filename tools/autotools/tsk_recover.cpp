@@ -10,6 +10,7 @@
  */
 
 #include "tsk/tsk_tools_i.h"
+#include "tsk/fs/tsk_ext2fs.h"
 #include <locale.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -339,14 +340,28 @@ TSK_RETVAL_ENUM TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
         return TSK_OK;
     else if ((isNtfsSystemFiles(fs_file, path)) || (isFATSystemFiles(fs_file)))
         return TSK_OK;
-    else if ((fs_file->meta == NULL) || (fs_file->meta->size == 0))
+    else if (fs_file->meta == NULL)
         return TSK_OK;
-
-    if(fs_file->fs_info->ftype == TSK_FS_TYPE_EXT4){
-        if(fs_file->meta->time2.ext2.dtime >= recover_time || fs_file->meta->atime >= recover_time)
-        writeFile(fs_file, path);
+    else if (fs_file->fs_info->ftype == TSK_FS_TYPE_EXT4) {
+        if (fs_file->meta->size == 0)
+        {
+            if (fs_file->meta->time2.ext2.dtime >= recover_time || fs_file->meta->atime >= recover_time)
+            {
+                EXT2FS_INFO* ext2fs = (EXT2FS_INFO*)fs_file->fs_info;
+                TSK_FS_META* recovered_meta = ext4_jrecover(fs_file->fs_info, fs_file->meta, fs_file->meta->addr);
+                writeFile(fs_file, path);
+            }
+            else
+            {
+                return TSK_OK;
+            }
+        }
+        else
+        {
+            writeFile(fs_file, path);
+        }
     }
-    else{
+    else if (fs_file->meta->size != 0) {
         writeFile(fs_file, path);
     }
     return TSK_OK;

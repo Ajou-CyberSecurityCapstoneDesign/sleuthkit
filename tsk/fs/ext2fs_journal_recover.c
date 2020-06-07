@@ -1,6 +1,6 @@
 #include "tsk/tsk_tools_i.h"
-#include "tsk_fs_i.h"
-#include "tsk_ext2fs.h"
+#include "tsk/fs/tsk_fs_i.h"
+#include "tsk/fs/tsk_ext2fs.h"
 #include "tsk/base/crc.h"
 #include <stddef.h>
 #include <locale.h>

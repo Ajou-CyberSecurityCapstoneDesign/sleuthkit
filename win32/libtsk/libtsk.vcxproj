@@ -495,6 +495,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile Include="..\..\tsk\fs\exfatfs_dent.c" />
     <ClCompile Include="..\..\tsk\fs\exfatfs.c" />
     <ClCompile Include="..\..\tsk\fs\exfatfs_meta.c" />
+    <ClCompile Include="..\..\tsk\fs\ext2fs_journal_recover.c" />
     <ClCompile Include="..\..\tsk\fs\fatfs_utils.c" />
     <ClCompile Include="..\..\tsk\fs\fatxxfs.c" />
     <ClCompile Include="..\..\tsk\fs\fatxxfs_dent.c" />

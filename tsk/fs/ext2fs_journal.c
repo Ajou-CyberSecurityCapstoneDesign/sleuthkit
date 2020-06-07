@@ -777,7 +777,7 @@ ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
 
     ext2fs_inode *recover_meta;
     recover_meta = (ext2fs_inode *) malloc(sizeof(ext2fs_inode));
-    uint tmp;
+    unsigned int tmp;
     tmp=recover_seq;
     strncpy(recover_meta->i_mode, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
     tmp+=sizeof(uint16_t);

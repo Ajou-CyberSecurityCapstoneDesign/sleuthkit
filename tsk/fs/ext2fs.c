@@ -579,7 +579,7 @@ ext2fs_dinode_load(EXT2FS_INFO * ext2fs, TSK_INUM_T dino_inum,
  *
  * returns 1 on error and 0 on success
  * */
-static uint8_t
+extern uint8_t
 ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
     TSK_INUM_T inum, const ext2fs_inode * dino_buf)
 {
@@ -3143,7 +3143,7 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
 
 /* ext2fs_close - close an ext2fs file system */
 
-static void
+extern void
 ext2fs_close(TSK_FS_INFO * fs)
 {
     EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) fs;
