@@ -424,6 +424,7 @@ TSK_FS_META *ext4_jrecover(TSK_FS_INFO *fs, TSK_FS_META * fs_meta, TSK_INUM_T ba
         ext2fs_close(ext2fs);
         exit(1);
     }
+    //printf("%u\n",back_inum);
 
      if ((recover_meta = ext2fs_journal_get_meta(fs, 0, 0, NULL, recover_blk, recover_seq))==NULL) {
         tsk_error_print(stderr);
