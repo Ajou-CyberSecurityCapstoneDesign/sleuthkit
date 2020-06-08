@@ -439,6 +439,9 @@ TSK_FS_META *ext4_jrecover(TSK_FS_INFO *fs, TSK_FS_META * fs_meta, TSK_INUM_T ba
         exit(1);
     }
     */
+
+    if (fs_meta != NULL)
+         tsk_fs_meta_reset(fs_meta);
     
     if(ext2fs_dinode_copy(ext2fs, fs_meta, back_inum,recover_meta)){
         free(recover_meta);
