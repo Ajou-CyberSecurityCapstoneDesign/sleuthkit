@@ -809,17 +809,18 @@ ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
 
     strncpy(recover_meta->i_f5, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
-   for(int i=0;i<15;i++){
-            strncpy(recover_meta->i_block[i], &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
-            tmp+=sizeof(uint32_t);
     
+     for(int i=0;i<15;i++){
+         for(int j=0;j<4;j++){
+            recover_meta->i_block[i][j] = *(&journ[end * jinfo->bsize]+tmp);
+            tmp+=sizeof(uint8_t);
+            //printf("recover meta i block : %u\n",tsk_gets32(fs->endian,recover_meta->i_block[i]));
+         }
     }
-    /*
-    strncpy(recover_meta->i_block, &journ[end * jinfo->bsize]+tmp,sizeof(uint8_t)*60);
-    tmp+=sizeof(uint8_t)*60;
-*/
+  
     strncpy(recover_meta->i_generation, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
+
     strncpy(recover_meta->i_file_acl, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
     strncpy(recover_meta->i_size_high, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
