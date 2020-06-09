@@ -26,8 +26,8 @@ jobs:
         mkdir mnt_before
         sudo mount -r /home/user/images/after ./mnt_after
         sudo mount -r /home/user/images/before ./mnt_before
-        ./local/bin/tsk_recover -r /home/user/images/after ./recover | column -t -s $'\t' > report.txt
-        python3 analyze_recovery.py ./mnt_before ./mnt_after ./recover > performance.txt
+        ./local/bin/tsk_recover -r /home/user/images/after ./recover
+        python3 analyze_recover.py ./mnt_before ./mnt_after ./recover > performance.txt
         sudo umount ./mnt_after
         sudo umount ./mnt_before
       
