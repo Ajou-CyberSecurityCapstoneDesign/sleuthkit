@@ -28,8 +28,13 @@ jobs:
         sudo mount -r /home/user/images/before ./mnt_before
         ./local/bin/tsk_recover -r /home/user/images/after ./recover
         python3 analyze_recover.py ./mnt_before ./mnt_after ./recover > performance.txt
+        
+    - name: clean
+      if: ${{ always() }}
+      run: |
         sudo umount ./mnt_after
         sudo umount ./mnt_before
+        
       
   build-windows:
     name: Build windows
