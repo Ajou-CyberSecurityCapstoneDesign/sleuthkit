@@ -123,7 +123,7 @@ ext2fs_is_super_bg(uint32_t feature_ro_compat, uint32_t group_block)
  * non-null to determine what to read instead of duplicating the logic everywhere.
  *
  * */
-static uint8_t
+extern uint8_t
     ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) ext2fs;
@@ -1735,7 +1735,7 @@ ext2fs_load_attrs(TSK_FS_FILE * fs_file)
 }
 
 
-static void
+extern void
 ext4_fsstat_datablock_helper(TSK_FS_INFO * fs, FILE * hFile,
     unsigned int i, TSK_DADDR_T cg_base, int gd_size)
 {

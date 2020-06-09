@@ -348,7 +348,9 @@ TSK_RETVAL_ENUM TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
             if (fs_file->meta->time2.ext2.dtime >= recover_time || fs_file->meta->atime >= recover_time)
             {
                 EXT2FS_INFO* ext2fs = (EXT2FS_INFO*)fs_file->fs_info;
-                TSK_FS_META* recovered_meta = ext4_jrecover(fs_file->fs_info, fs_file->meta, fs_file->meta->addr);
+                if(ext4_jrecover(fs_file->fs_info, fs_file->meta, fs_file->meta->addr)){
+                    return TSK_OK;
+                }
                 writeFile(fs_file, path);
             }
             else
