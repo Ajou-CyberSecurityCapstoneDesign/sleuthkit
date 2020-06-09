@@ -22,33 +22,37 @@ def analyze_directory(directory_path):
         for file_name in filenames:
             file_path = os.path.join(dirpath, file_name)
             file_info = FileInfo(file_path)
-            files_info[file_info.path] = file_info
+            files_info[file_info.path.replace(directory_path, '', 1)] = file_info
     return files_info
 
 
-def analyze_recover(original_path, delete_path, recover_path):
+def analyze_recover(original_path, modified_path, recover_path):
     original_files_info = analyze_directory(original_path)
-    delete_files_info = analyze_directory(delete_path)
+    modified_files_info = analyze_directory(modified_path)
     recover_files_info = analyze_directory(recover_path)
 
-    deleted_files_info = {}
-    for file in original_files_info.values():
-        if file.path not in delete_files_info:
-            deleted_files_info[file.path] = file
+    deleted_files_origianl_info = {}
+    for path in original_files_info:
+        if path not in modified_files_info:
+            print(f'Deleted file : {path}')
+            deleted_files_origianl_info[path] = original_files_info[path]
 
     total_size = 0
     recovered_size = 0
     recovered_cnt = 0
-    for file in deleted_files_info.values():
-        total_size = total_size + file.stat.st_size
-        if file.path in recover_files_info:
-            recovered_size = recovered_size + file.stat.st_size
-            if file.sha1 == recover_files_info[file.path].sha1:
+    for path in deleted_files_origianl_info:
+        origianl_info = deleted_files_origianl_info[path]
+        total_size = total_size + origianl_info.stat.st_size
+        if path in recover_files_info:
+            print(f'Recovered file : {path}')
+            recovered_info = recover_files_info[path]
+            recovered_size = recovered_size + recovered_info.stat.st_size
+            if original_info.sha1 == recovered_info.sha1:
                 recovered_cnt = recovered_cnt + 1
 
-    print(f'Deleted files : {len(deleted_files_info)}')
+    print(f'Deleted files : {len(deleted_files_origianl_info)}')
     print(f'Recovered files size : {recovered_size}/{total_size} ({round(recovered_size / total_size, 2)}%)')
-    print(f'Fully recovered files count : {recovered_cnt}/{len(deleted_files_info)} ({round(recovered_cnt/len(deleted_files_info), 2)}%)')
+    print(f'Fully recovered files count : {recovered_cnt}/{len(deleted_files_origianl_info)} ({round(recovered_cnt/len(deleted_files_origianl_info), 2)}%)')
 
 
 if __name__ == '__main__':
