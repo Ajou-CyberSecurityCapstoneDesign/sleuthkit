@@ -592,7 +592,7 @@ main(int argc, char **argv1)
             if (*cp || *cp == *OPTARG || yyyymmdd < 19700101) {
                 TFPRINTF(stderr,
                     _TSK_T
-                    ("invalid argument: time infomation must be larger than 19970101: %s\n"),
+                    ("invalid argument: time infomation must be larger than 19700101: %s\n"),
                     OPTARG);
                 usage();
             }
