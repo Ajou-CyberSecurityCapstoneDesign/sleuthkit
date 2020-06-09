@@ -63,7 +63,6 @@ uint32_t ext2fs_get_blk(TSK_FS_INFO *fs,uint32_t recover_grp){
                 if (ext2fs->ext4_grp_buf != NULL) {
                     // The block bitmap is a full block 
                     recover_blk = ext4_getu64(fs->endian,ext2fs->ext4_grp_buf->bg_inode_table_hi,ext2fs->ext4_grp_buf->bg_inode_table_lo);
-                    ext4_fsstat_datablock_helper(fs, stdout, j, cg_base, gd_size);
                     tsk_release_lock(&ext2fs->lock);
                     return recover_blk;
                 }
