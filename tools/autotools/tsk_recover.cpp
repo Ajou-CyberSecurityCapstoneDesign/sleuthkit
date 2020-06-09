@@ -25,7 +25,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-vVae] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] [-P pooltype] [-B pool_volume_block] [-d dir_inum] image [image] output_dir\n"),
+        ("usage: %s [-vVaer] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] [-P pooltype] [-B pool_volume_block] [-d dir_inum] image [image] output_dir\n"),
         progname);
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
@@ -38,6 +38,7 @@ usage()
     tsk_fprintf(stderr, "\t-a: Recover allocated files only\n");
     tsk_fprintf(stderr,
         "\t-e: Recover all files (allocated and unallocated)\n");
+    tsk_fprintf(stderr, "\t-r: Print detailed information about recovered files\n");
     tsk_fprintf(stderr,
         "\t-o sector_offset: sector offset for a volume to recover (recovers only that volume)\n");
     tsk_fprintf(stderr,
@@ -48,7 +49,6 @@ usage()
         "\t-d dir_inum: Directory inum to recover from (must also specify a specific partition using -o or there must not be a volume system)\n");
     tsk_fprintf(stderr,
         "\t-t time: how long days the file has been deleted (must integer)\n");
-    tsk_fprintf(stderr, "\t-r: Print detailed information about recovered files\n");
     exit(1);
 }
 
@@ -483,7 +483,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("abt:B:d:ef:i:o:P:vV:r"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("abtr:B:d:ef:i:o:P:vV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
