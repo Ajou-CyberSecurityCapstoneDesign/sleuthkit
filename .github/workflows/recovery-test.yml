@@ -32,12 +32,14 @@ jobs:
     - name: Upload a recovery report
       uses: actions/upload-artifact@v2
       with:
+        name: report.txt
         # A file, directory or wildcard pattern that describes what to upload
         path: report.txt
         
     - name: Upload a performance report
       uses: actions/upload-artifact@v2
       with:
+        name: performance.txt
         # A file, directory or wildcard pattern that describes what to upload
         path: performance.txt
         
