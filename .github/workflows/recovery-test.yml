@@ -26,8 +26,20 @@ jobs:
         mkdir mnt_before
         sudo mount -r /home/user/images/after ./mnt_after
         sudo mount -r /home/user/images/before ./mnt_before
-        ./local/bin/tsk_recover -r /home/user/images/after ./recover
+        ./local/bin/tsk_recover -r /home/user/images/after ./recover | column -t -s $'\t' > report.txt
         python3 analyze_recover.py ./mnt_before ./mnt_after ./recover > performance.txt
+        
+    - name: Upload a recovery report
+      uses: actions/upload-artifact@v2
+      with:
+        # A file, directory or wildcard pattern that describes what to upload
+        path: report.txt
+        
+    - name: Upload a performance report
+      uses: actions/upload-artifact@v2
+      with:
+        # A file, directory or wildcard pattern that describes what to upload
+        path: performance.txt
         
     - name: clean
       if: ${{ always() }}
