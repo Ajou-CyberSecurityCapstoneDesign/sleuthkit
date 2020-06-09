@@ -682,6 +682,7 @@ extern "C" {
     extern void ext2fs_close(TSK_FS_INFO *);
     extern uint8_t ext2fs_group_load(EXT2FS_INFO *, EXT2_GRPNUM_T);
     extern void ext4_fsstat_datablock_helper(TSK_FS_INFO *, FILE *, unsigned int, TSK_DADDR_T, int);
+    extern uint32_t ext2fs_get_blk(TSK_FS_INFO* fs, uint32_t recover_grp);
 
 
 #ifdef __cplusplus

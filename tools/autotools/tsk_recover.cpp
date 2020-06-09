@@ -48,6 +48,7 @@ usage()
         "\t-d dir_inum: Directory inum to recover from (must also specify a specific partition using -o or there must not be a volume system)\n");
     tsk_fprintf(stderr,
         "\t-t time: how long days the file has been deleted (must integer)\n");
+    tsk_fprintf(stderr, "\t-r: Print detailed information about recovered files\n");
     exit(1);
 }
 
@@ -66,6 +67,7 @@ public:
     uint8_t openFs(TSK_OFF_T a_soffset, TSK_FS_TYPE_ENUM fstype, TSK_POOL_TYPE_ENUM pooltype, TSK_DADDR_T pvol_block);
     uint8_t findFiles(TSK_INUM_T a_dirInum);
     uint8_t handleError();
+    void setReport(bool reportOption);
     
 private:
     TSK_TCHAR * m_base_dir;
@@ -74,6 +76,7 @@ private:
     bool m_writeVolumeDir;
     int m_fileCount;
     TSK_FS_INFO *  m_fs_info;
+    bool m_reportOption;
 };
 
 
@@ -95,6 +98,11 @@ uint8_t TskRecover::handleError()
     fprintf(stderr, "%s", tsk_error_get());
     return 0;
 } 
+
+void TskRecover::setReport(bool reportOption)
+{
+    m_reportOption = reportOption;
+}
 
 /** \internal
  * Callback used to walk file content and write the results to the recovery file.
@@ -348,8 +356,15 @@ TSK_RETVAL_ENUM TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
             if (fs_file->meta->time2.ext2.dtime >= recover_time || fs_file->meta->atime >= recover_time)
             {
                 EXT2FS_INFO* ext2fs = (EXT2FS_INFO*)fs_file->fs_info;
-                if(ext4_jrecover(fs_file->fs_info, fs_file->meta, fs_file->meta->addr)){
+                if (ext4_jrecover(fs_file->fs_info, fs_file->meta, fs_file->meta->addr)) {
                     return TSK_OK;
+                }
+                if (m_reportOption)
+                {
+                    uint32_t recover_grp = (fs_file->meta->addr - 1) / tsk_getu32(fs_file->fs_info->endian, ext2fs->fs->s_inodes_per_group);
+                    uint32_t recover_seq = ((fs_file->meta->addr - 1) % tsk_getu32(fs_file->fs_info->endian, ext2fs->fs->s_inodes_per_group)) * ext2fs->inode_size;
+                    uint32_t recover_blk = ext2fs_get_blk(fs_file->fs_info, recover_grp);
+                    tsk_fprintf(stderr, "%s%s\t%" PRIuINUM "\t%u\n", path, fs_file->name->name, fs_file->meta->addr, fs_file->fs_info->block_size * recover_blk + ext2fs->inode_size * recover_seq);
                 }
                 writeFile(fs_file, path);
             }
@@ -426,6 +441,8 @@ TskRecover::openFs(TSK_OFF_T a_soffset, TSK_FS_TYPE_ENUM fstype, TSK_POOL_TYPE_E
 uint8_t
 TskRecover::findFiles(TSK_INUM_T a_dirInum)
 {
+    if (m_reportOption)
+        tsk_fprintf(stderr, "PATH\tINODE\tINODE_OFFSET\n");
     uint8_t retval;
     if (a_dirInum)
         retval = findFilesInFs(m_fs_info, a_dirInum);
@@ -451,6 +468,7 @@ main(int argc, char **argv1)
     TSK_TCHAR *cp;
     TSK_FS_DIR_WALK_FLAG_ENUM walkflag = TSK_FS_DIR_WALK_FLAG_UNALLOC;
     TSK_INUM_T dirInum = 0;
+    bool reportOption = false;
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
@@ -465,7 +483,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("abt:B:d:ef:i:o:P:vV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("abt:B:d:ef:i:o:P:vV:r"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -565,6 +583,10 @@ main(int argc, char **argv1)
             tsk_version_print(stdout);
             exit(0);
 
+        case _TSK_T('r'):
+            reportOption = true;
+            break;
+
         case _TSK_T('t'):
             unsigned int days = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || days < 0) {
@@ -580,7 +602,6 @@ main(int argc, char **argv1)
             recover_time *= (60*60*24);
             break;
         }
-        
     }
 
     /* We need at least one more argument */
@@ -593,6 +614,7 @@ main(int argc, char **argv1)
     TskRecover tskRecover(argv[argc-1]);
 
     tskRecover.setFileFilterFlags(walkflag);    
+    tskRecover.setReport(reportOption);
     if (tskRecover.openImage(argc - OPTIND - 1, &argv[OPTIND], imgtype,
             ssize)) {
         tsk_error_print(stderr);
