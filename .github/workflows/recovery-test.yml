@@ -19,11 +19,8 @@ jobs:
       run: make
     - name: make install
       run: make install
-    - name: check tsk
-      run: |
-        ./local/bin/tsk_recover -V
+        
     - name: performance evaluation
-      
       run: |
         mkdir mnt_after
         mkdir mnt_before
@@ -31,6 +28,8 @@ jobs:
         sudo mount -r /home/user/images/before ./mnt_before
         ./local/bin/tsk_recover -r /home/user/images/after ./recover | column -t -s $'\t' > report.txt
         python3 analyze_recovery.py ./mnt_before ./mnt_after ./recover > performance.txt
+        sudo umount ./mnt_after
+        sudo umount ./mnt_before
       
   build-windows:
     name: Build windows
