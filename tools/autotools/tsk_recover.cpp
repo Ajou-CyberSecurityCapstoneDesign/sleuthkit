@@ -25,7 +25,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-vVaer] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] [-P pooltype] [-B pool_volume_block] [-d dir_inum] image [image] output_dir\n"),
+        ("usage: %s [-vVaer] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] [-P pooltype] [-B pool_volume_block] [-d dir_inum] [-t recover_date ]image [image] output_dir\n"),
         progname);
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
@@ -48,7 +48,7 @@ usage()
     tsk_fprintf(stderr, 
         "\t-d dir_inum: Directory inum to recover from (must also specify a specific partition using -o or there must not be a volume system)\n");
     tsk_fprintf(stderr,
-        "\t-t time: how long days the file has been deleted (must integer)\n");
+        "\t-t recover_date : When the file that you want to recover was deleted ex) 20200609\n");
     exit(1);
 }
 
@@ -483,7 +483,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("abtr:B:d:ef:i:o:P:vV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("ab:rt:B:d:ef:i:o:P:vV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -588,18 +588,28 @@ main(int argc, char **argv1)
             break;
 
         case _TSK_T('t'):
-            unsigned int days = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
-            if (*cp || *cp == *OPTARG || days < 0) {
+            unsigned int yyyymmdd = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || yyyymmdd < 19700101) {
                 TFPRINTF(stderr,
                     _TSK_T
-                    ("invalid argument: time infomation must be positive: %s\n"),
+                    ("invalid argument: time infomation must be larger than 19970101: %s\n"),
                     OPTARG);
                 usage();
             }
-            time(&recover_time);
-            recover_time -= (60*60*24)*days;
-            recover_time /=(60*60*24);
-            recover_time *= (60*60*24);
+            int yyyy = (yyyymmdd/10000)-1970;
+            int mm = ((yyyymmdd%10000)/100)-1;
+            int dd = (yyyymmdd%100)-1;
+            int month_to_day = 0;
+            int month_info[12]= {31,28,31,30,31,30,31,31,30,31,30,31};
+            int leaf_year = 0;
+            for(int it = 1972;it<=yyyy;it+=4)
+                leaf_year++;
+            for(int it = 0; it<mm;it++){
+                month_to_day += month_info[it];
+            }
+            recover_time = (yyyy*365*24*60*60) + (leaf_year*24*60*60) + (month_to_day*24*60*60) + (dd*24*60*60);
+
+            
             break;
         }
     }
