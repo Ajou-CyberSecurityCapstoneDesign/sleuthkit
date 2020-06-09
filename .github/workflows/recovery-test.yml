@@ -7,7 +7,7 @@ on:
 jobs:
   build-linux:
     name: Build linux
-    runs-on: ubuntu-latest
+    runs-on: ['self-hosted', 'linux', 'images']
 
     steps:
     - uses: actions/checkout@v2
@@ -21,11 +21,16 @@ jobs:
       run: make install
     - name: check tsk
       run: |
-        cd local
-        ls -l
-        cd bin
-        ls -l
-        ./tsk_recover -V
+        ./local/bin/tsk_recover -V
+    - name: performance evaluation
+      
+      run: |
+        mkdir mnt_after
+        mkdir mnt_before
+        sudo mount -r /home/user/images/after ./mnt_after
+        sudo mount -r /home/user/images/before ./mnt_before
+        ./local/bin/tsk_recover -r /home/user/images/after ./recover | column -t -s $'\t' > report.txt
+        python3 analyze_recovery.py ./mnt_before ./mnt_after ./recover > performance.txt
       
   build-windows:
     name: Build windows
@@ -38,7 +43,7 @@ jobs:
           JDK_HOME: 'C:\Program Files\Java\jdk-14.0.1'
         shell: cmd
         run: |
-          "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\devenv" .\win32\tsk-win.sln /Build "Debug_NoLibs|Win32"
+          "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\devenv.com" .\win32\tsk-win.sln /Build "Debug_NoLibs|Win32"
       - name: check tsk
         shell: cmd
         run: .\win32\Debug_NoLibs\tsk_recover.exe -V
