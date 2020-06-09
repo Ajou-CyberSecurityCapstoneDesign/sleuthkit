@@ -32,14 +32,14 @@ def analyze_recover(original_path, delete_path, recover_path):
     recover_files_info = analyze_directory(recover_path)
 
     deleted_files_info = {}
-    for file in original_files_info:
+    for file in original_files_info.values():
         if file.path not in delete_files_info:
             deleted_files_info[file.path] = file
 
     total_size = 0
     recovered_size = 0
     recovered_cnt = 0
-    for file in deleted_files_info:
+    for file in deleted_files_info.values():
         total_size = total_size + file.stat.st_size
         if file.path in recover_files_info:
             recovered_size = recovered_size + file.stat.st_size
