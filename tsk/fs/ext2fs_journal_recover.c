@@ -101,13 +101,13 @@ int ext4_jrecover(TSK_FS_INFO *fs, TSK_FS_META * fs_meta, TSK_INUM_T back_inum){
         return 1;
     }
 
-     if ((recover_meta = ext2fs_journal_get_meta(fs, 0, 0, NULL, recover_blk, recover_seq))==NULL) 
+     if ((recover_meta = ext2fs_journal_get_meta(fs, 0, 0, NULL, recover_blk, recover_seq))==NULL){
         return 1;
+    }
     else{
         //메타 복구 시, 덮어쓰기
         if(ext2fs_dinode_copy(ext2fs, fs_meta, back_inum,recover_meta))
             return 1;
-
         return 0;
     }
 

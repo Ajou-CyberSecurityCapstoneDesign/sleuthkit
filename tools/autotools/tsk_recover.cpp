@@ -342,10 +342,15 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
 TSK_RETVAL_ENUM TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
     // skip a bunch of the files that we don't want to write
-    if (isDotDir(fs_file))
+    if (isDotDir(fs_file)){
         return TSK_OK;
-    else if (isDir(fs_file))
-        return TSK_OK;
+    }
+    else if (isDir(fs_file)){
+        if(fs_file->meta->size==0){
+            ext4_jrecover(fs_file->fs_info, fs_file->meta, fs_file->meta->addr);
+            return TSK_OK;
+        }
+    }
     else if ((isNtfsSystemFiles(fs_file, path)) || (isFATSystemFiles(fs_file)))
         return TSK_OK;
     else if (fs_file->meta == NULL)
