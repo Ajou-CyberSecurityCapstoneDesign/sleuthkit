@@ -88,14 +88,12 @@ int ext4_jrecover(TSK_FS_INFO *fs, TSK_FS_META * fs_meta, TSK_INUM_T back_inum){
     uint32_t recover_blk;
     recover_grp = (back_inum-1) / tsk_getu32(fs->endian,ext2fs->fs->s_inodes_per_group);
     recover_seq = ((back_inum-1) % tsk_getu32(fs->endian, ext2fs->fs->s_inodes_per_group)) * ext2fs->inode_size;
-    printf("grp: %u\n",recover_grp);
     if((recover_blk=ext2fs_get_blk(fs,recover_grp))<0){
         tsk_error_print(stderr);
         ext2fs_close(ext2fs);
         tsk_fs_file_close(fs);
         exit(1);
     }
-    printf("blk: %u\n",recover_blk);
     
     if (fs->jopen(fs, inum)) {
         tsk_error_print(stderr);
