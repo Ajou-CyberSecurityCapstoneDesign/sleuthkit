@@ -363,7 +363,7 @@ TSK_RETVAL_ENUM TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
                 {
                     uint32_t recover_grp = (fs_file->meta->addr - 1) / tsk_getu32(fs_file->fs_info->endian, ext2fs->fs->s_inodes_per_group);
                     uint32_t recover_seq = ((fs_file->meta->addr - 1) % tsk_getu32(fs_file->fs_info->endian, ext2fs->fs->s_inodes_per_group)) * ext2fs->inode_size;
-                    uint32_t recover_blk = ext2fs_get_blk(fs_file->fs_info, recover_grp);
+                    uint64_t recover_blk = ext2fs_get_blk(fs_file->fs_info, recover_grp);
                     tsk_fprintf(stdout, "%s%s\t%" PRIuINUM "\t%u\n", path, fs_file->name->name, fs_file->meta->addr, fs_file->fs_info->block_size * recover_blk + ext2fs->inode_size * recover_seq);
                 }
                 writeFile(fs_file, path);

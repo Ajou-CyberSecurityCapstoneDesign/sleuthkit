@@ -629,7 +629,7 @@ TSK_DADDR_T ext2fs_journal_get_block(TSK_FS_INFO * fs, int flags,
 }
 
 ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
-    TSK_FS_JENTRY_WALK_CB action, void *ptr, uint32_t recover_blk, uint32_t recover_seq)
+    TSK_FS_JENTRY_WALK_CB action, void *ptr, uint64_t recover_blk, uint32_t recover_seq)
 {
  EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) fs;
     EXT2FS_JINFO *jinfo = ext2fs->jinfo;
@@ -816,7 +816,6 @@ ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
          for(int j=0;j<4;j++){
             recover_meta->i_block[i][j] = *(&journ[end * jinfo->bsize]+tmp);
             tmp+=sizeof(uint8_t);
-            //printf("recover meta i block : %u\n",tsk_gets32(fs->endian,recover_meta->i_block[i]));
          }
     }
   

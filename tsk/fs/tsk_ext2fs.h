@@ -672,7 +672,7 @@ extern "C" {
     extern TSK_DADDR_T ext2fs_journal_get_block(TSK_FS_INFO *, int,
     TSK_FS_JENTRY_WALK_CB, void *, uint32_t);
     extern ext2fs_inode* ext2fs_journal_get_meta(TSK_FS_INFO *, int,
-        TSK_FS_JENTRY_WALK_CB, void *, uint32_t, uint32_t);
+        TSK_FS_JENTRY_WALK_CB, void *, uint64_t, uint32_t);
     extern uint8_t ext2fs_jblk_walk(TSK_FS_INFO *, TSK_DADDR_T,
         TSK_DADDR_T, int, TSK_FS_JBLK_WALK_CB, void *);
     extern int ext4_jrecover(TSK_FS_INFO *, TSK_FS_META *, TSK_INUM_T);
@@ -682,7 +682,7 @@ extern "C" {
     extern void ext2fs_close(TSK_FS_INFO *);
     extern uint8_t ext2fs_group_load(EXT2FS_INFO *, EXT2_GRPNUM_T);
     extern void ext4_fsstat_datablock_helper(TSK_FS_INFO *, FILE *, unsigned int, TSK_DADDR_T, int);
-    extern uint32_t ext2fs_get_blk(TSK_FS_INFO* fs, uint32_t recover_grp);
+    extern uint64_t ext2fs_get_blk(TSK_FS_INFO*, uint32_t);
 
 
 #ifdef __cplusplus
