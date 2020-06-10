@@ -52,35 +52,20 @@ uint32_t ext2fs_get_blk(TSK_FS_INFO *fs,uint32_t recover_grp){
 
         inum =
             fs->first_inum + tsk_gets32(fs->endian,ext2fs->fs->s_inodes_per_group) * j;
-        if (tsk_getu32(fs->endian, ext2fs->fs->s_feature_incompat) & EXT2FS_FEATURE_INCOMPAT_64BIT) {
-            cg_base = ext4_cgbase_lcl(fs, ext2fs->fs, j);
         
-            if (ext2fs_group_load(ext2fs, j)) {
+        if (ext2fs_group_load(ext2fs, j)) {
                 tsk_release_lock(&ext2fs->lock);
-                return 0;
-            }
-            if(j==recover_grp){
-                if (ext2fs->ext4_grp_buf != NULL) {
-                    // The block bitmap is a full block 
-                    recover_blk = ext4_getu64(fs->endian,ext2fs->ext4_grp_buf->bg_inode_table_hi,ext2fs->ext4_grp_buf->bg_inode_table_lo);
-                    tsk_release_lock(&ext2fs->lock);
-                    return recover_blk;
-                }
-                else{ 
-                    recover_blk = ext4_getu64(fs->endian,ext2fs->ext4_grp_buf->bg_inode_table_hi,ext2fs->ext4_grp_buf->bg_inode_table_lo);
-                    tsk_release_lock(&ext2fs->lock);
-                    return recover_blk;
-                }
-                
-            }
+                return -1;
         }
-        else{
-            tsk_release_lock(&ext2fs->lock);
-            continue;
+
+         if(j==recover_grp){
+                // The block bitmap is a full block 
+                recover_blk = ext4_getu64(fs->endian,ext2fs->ext4_grp_buf->bg_inode_table_hi,ext2fs->ext4_grp_buf->bg_inode_table_lo);
+                tsk_release_lock(&ext2fs->lock);
+                return recover_blk;     
         }
-    }
-    if(j==ext2fs->groups_count){
-        return 0;
+        tsk_release_lock(&ext2fs->lock);
+        continue;
     }
     //tsk_release_lock(&ext2fs->lock);
     return -1;
@@ -103,12 +88,14 @@ int ext4_jrecover(TSK_FS_INFO *fs, TSK_FS_META * fs_meta, TSK_INUM_T back_inum){
     uint32_t recover_blk;
     recover_grp = (back_inum-1) / tsk_getu32(fs->endian,ext2fs->fs->s_inodes_per_group);
     recover_seq = ((back_inum-1) % tsk_getu32(fs->endian, ext2fs->fs->s_inodes_per_group)) * ext2fs->inode_size;
+    printf("grp: %u\n",recover_grp);
     if((recover_blk=ext2fs_get_blk(fs,recover_grp))<0){
         tsk_error_print(stderr);
         ext2fs_close(ext2fs);
         tsk_fs_file_close(fs);
         exit(1);
     }
+    printf("blk: %u\n",recover_blk);
     
     if (fs->jopen(fs, inum)) {
         tsk_error_print(stderr);
