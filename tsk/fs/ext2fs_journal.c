@@ -486,8 +486,6 @@ TSK_DADDR_T ext2fs_journal_get_block(TSK_FS_INFO * fs, int flags,
 
     ext2fs_inode *recover_meta;
     recover_meta = (ext2fs_inode *) tsk_malloc(sizeof(ext2fs_inode));
-    uint32_t tmp;
-    int j=0;
 
 
     // clean up any error messages that are lying around
@@ -532,6 +530,8 @@ TSK_DADDR_T ext2fs_journal_get_block(TSK_FS_INFO * fs, int flags,
         return 0;
     }
 
+    uint32_t tmp=0;
+    TSK_DADDR_T tmp_jblk=0;
 
     /* Process the journal 
      * Cycle through each block
@@ -541,8 +541,6 @@ TSK_DADDR_T ext2fs_journal_get_block(TSK_FS_INFO * fs, int flags,
      * process its contents. */
     for (i = 0; i < jinfo->last_block; i++) {
         ext2fs_journ_head *head;
-        ext2fs_journ_head *tmp;
-        tmp = (ext2fs_journ_head *) malloc(sizeof(ext2fs_journ_head));
 
         /* if there is no magic, then it is a normal block 
          * These should be accounted for when we see its corresponding
@@ -602,30 +600,21 @@ TSK_DADDR_T ext2fs_journal_get_block(TSK_FS_INFO * fs, int flags,
                 }
 
                 if(big_tsk_getu32(dentry->fs_blk) == recover_blk){
-                    /*백업된 저널 여러개면 가장 마지막 seq 복원
-                    if(tmp->entry_seq > head->entry_seq){//이전 seq보다 최근일시, 
-                        j=0;
+                    if(tmp < head->entry_seq){//이전 seq보다 최근일시, 
+                        tmp = head -> entry_seq;
+                        tmp_jblk = i;
                     }
-                    else
-                        continue; //이전 백업보다 더 이전 백업본, 
-                    
-                   if(j==0){
-                        tmp=head2->entry_seq;
-                    }*/
-                    return i;
-                    
                 }
             }
         }
-        
     }
-
-    if(i==jinfo->last_block){
-        i=0;
+    if(i>jinfo->last_block){
+        tmp_jblk=-1;
     }
-
     free(journ);
-    return i;
+
+    return tmp_jblk;
+
 }
 
 ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
@@ -639,7 +628,9 @@ ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
     TSK_DADDR_T start;
     TSK_DADDR_T end;
 
-    start = ext2fs_journal_get_block(fs, flags, action, ptr,recover_blk);
+    if((start = ext2fs_journal_get_block(fs, flags, action, ptr,recover_blk))<0){
+        return NULL;
+    }
     end = start;
 
     // clean up any error messages that are lying around

@@ -100,6 +100,7 @@ int ext4_jrecover(TSK_FS_INFO *fs, TSK_FS_META * fs_meta, TSK_INUM_T back_inum){
         tsk_fs_file_close(fs);
         return 1;
     }
+    /*모드 처리 해야함*/
 
      if ((recover_meta = ext2fs_journal_get_meta(fs, 0, 0, NULL, recover_blk, recover_seq))==NULL){
         return 1;
