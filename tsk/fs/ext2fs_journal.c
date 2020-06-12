@@ -487,7 +487,6 @@ TSK_DADDR_T ext2fs_journal_get_block(TSK_FS_INFO * fs, int flags,
     ext2fs_inode *recover_meta;
     recover_meta = (ext2fs_inode *) tsk_malloc(sizeof(ext2fs_inode));
 
-
     // clean up any error messages that are lying around
     tsk_error_reset();
 
@@ -496,7 +495,7 @@ TSK_DADDR_T ext2fs_journal_get_block(TSK_FS_INFO * fs, int flags,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr("ext2fs_jentry_walk: journal is not open");
-        return 0;
+        return -1;
     }
 
     if ((TSK_DADDR_T)jinfo->fs_file->meta->size !=
@@ -505,20 +504,20 @@ TSK_DADDR_T ext2fs_journal_get_block(TSK_FS_INFO * fs, int flags,
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr
             ("ext2fs_jentry_walk: journal file size is different from \nsize reported in journal super block");
-        return 0;
+        return -1;
     }
 
     /* Load the journal into a buffer */
     buf1.left = buf1.total = (size_t) jinfo->fs_file->meta->size;
     journ = buf1.cur = buf1.base = tsk_malloc(buf1.left);
     if (journ == NULL) {
-        return 0;
+        return -1;
     }
     
     if (tsk_fs_file_walk(jinfo->fs_file,
             0, tsk_fs_load_file_action, (void *) &buf1)) {
         free(journ);
-        return 0;
+        return -1;
     }
 
     if (buf1.left > 0) {
@@ -527,7 +526,7 @@ TSK_DADDR_T ext2fs_journal_get_block(TSK_FS_INFO * fs, int flags,
         tsk_error_set_errstr
             ("ext2fs_jentry_walk: Buffer not fully copied");
         free(journ);
-        return 0;
+        return -1;
     }
 
     uint32_t tmp=0;
@@ -577,18 +576,24 @@ TSK_DADDR_T ext2fs_journal_get_block(TSK_FS_INFO * fs, int flags,
                 (ext2fs_journ_dentry *) ((uintptr_t) head +
                 sizeof(ext2fs_journ_head));;
 
+            if(tmp < big_tsk_getu32(head->entry_seq)){ // recent seq 
+                tmp=big_tsk_getu32(head->entry_seq);
+            }
+            else
+                continue;
+
+
             /* Cycle through the descriptor entries to account for the journal blocks */
             while ((uintptr_t) dentry <=
                 ((uintptr_t) head + jinfo->bsize -
                     sizeof(ext2fs_journ_head))) {
                 ext2fs_journ_head *head2;
-                TSK_OFF_T off;
-                ssize_t cnt;
+
 
                 /* Our counter is over the end of the journ */
-                if (++i > jinfo->last_block)
+                if (++i > jinfo->last_block){
                     break;
-
+                }
 
                 /* Look at the block that this entry refers to */
                 head2 = (ext2fs_journ_head *) & journ[i * jinfo->bsize];
@@ -600,15 +605,30 @@ TSK_DADDR_T ext2fs_journal_get_block(TSK_FS_INFO * fs, int flags,
                 }
 
                 if(big_tsk_getu32(dentry->fs_blk) == recover_blk){
-                    if(tmp < head->entry_seq){//이전 seq보다 최근일시, 
-                        tmp = head -> entry_seq;
-                        tmp_jblk = i;
-                    }
+                    tmp_jblk=i;
+                    break;
                 }
+
+                 /* Increment to the next */
+                if (big_tsk_getu32(dentry->flag) & EXT2_J_DENTRY_LAST)
+                    break;
+
+                /* If the SAMEID value is set, then we advance by the size of the entry, otherwise add 16 for the ID */
+                else if (big_tsk_getu32(dentry->flag) &
+                    EXT2_J_DENTRY_SAMEID)
+                    dentry =
+                        (ext2fs_journ_dentry *) ((uintptr_t) dentry +
+                        sizeof(ext2fs_journ_dentry));
+
+                else
+                    dentry =
+                        (ext2fs_journ_dentry *) ((uintptr_t) dentry +
+                        sizeof(ext2fs_journ_dentry) + 16);
             }
         }
     }
-    if(i>jinfo->last_block){
+   
+    if(tmp_jblk==jinfo->last_block){
         tmp_jblk=-1;
     }
     free(journ);
@@ -848,6 +868,10 @@ ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
     strncpy(recover_meta->i_crtime_extra, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
     strncpy(recover_meta->i_version_hi, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+
+    if(!tsk_getu16(fs->endian,recover_meta->i_block)){
+        return NULL;
+    }
 
     return recover_meta;
 }

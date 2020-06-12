@@ -346,10 +346,7 @@ TSK_RETVAL_ENUM TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
         return TSK_OK;
     }
     else if (isDir(fs_file)){
-        if(fs_file->meta->size==0){
-            ext4_jrecover(fs_file->fs_info, fs_file->meta, fs_file->meta->addr);
-            return TSK_OK;
-        }
+        return TSK_OK;
     }
     else if ((isNtfsSystemFiles(fs_file, path)) || (isFATSystemFiles(fs_file)))
         return TSK_OK;
@@ -361,8 +358,8 @@ TSK_RETVAL_ENUM TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
             if (fs_file->meta->time2.ext2.dtime >= recover_time || fs_file->meta->atime >= recover_time)
             {
                 EXT2FS_INFO* ext2fs = (EXT2FS_INFO*)fs_file->fs_info;
-                if (ext4_jrecover(fs_file->fs_info, fs_file->meta, fs_file->meta->addr)) {
-                    return TSK_OK;
+                if(ext4_jrecover(fs_file->fs_info, fs_file->meta, fs_file->meta->addr)){
+                   
                 }
                 if (m_reportOption)
                 {
@@ -378,13 +375,9 @@ TSK_RETVAL_ENUM TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
                 return TSK_OK;
             }
         }
-        else
-        {
-            writeFile(fs_file, path);
-        }
     }
     else if (fs_file->meta->size != 0) {
-        writeFile(fs_file, path);
+            writeFile(fs_file, path);
     }
     return TSK_OK;
 }

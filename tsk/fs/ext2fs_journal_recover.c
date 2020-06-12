@@ -74,10 +74,10 @@ int ext4_jrecover(TSK_FS_INFO *fs, TSK_FS_META * fs_meta, TSK_INUM_T back_inum){
     ext2fs_inode *recover_meta ;
     TSK_INUM_T inum;
     inum = fs->journ_inum;
-
     EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) fs;
-     /*inum 번호로 몇번 블록의 몇번째 inode 인지 계산*/
+    EXT2FS_JINFO *jinfo = ext2fs->jinfo;
 
+     /*inum 번호로 몇번 블록의 몇번째 inode 인지 계산*/
     uint32_t recover_grp;
     uint32_t recover_seq;
     uint64_t recover_blk;
@@ -92,17 +92,16 @@ int ext4_jrecover(TSK_FS_INFO *fs, TSK_FS_META * fs_meta, TSK_INUM_T back_inum){
         tsk_fs_file_close(fs);
         return 1;
     }
-
     recover_blk += recover_seq / recover_tmp;
     recover_seq = (recover_seq % recover_tmp)*ext2fs->inode_size;
+
     if (fs->jopen(fs, inum)) {
         ext2fs_close(ext2fs);
         tsk_fs_file_close(fs);
         return 1;
     }
-    /*모드 처리 해야함*/
 
-     if ((recover_meta = ext2fs_journal_get_meta(fs, 0, 0, NULL, recover_blk, recover_seq))==NULL){
+    if ((recover_meta = ext2fs_journal_get_meta(fs, 0, 0, NULL, recover_blk, recover_seq))==NULL){
         return 1;
     }
     else{

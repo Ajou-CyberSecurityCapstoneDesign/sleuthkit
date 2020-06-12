@@ -17,6 +17,40 @@
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
+int isDotDir(TSK_FS_FILE * a_fs_file)
+{
+    if ((!a_fs_file) || (!a_fs_file->name)
+        || (a_fs_file->name->type != TSK_FS_NAME_TYPE_DIR))
+        return 0;
+
+    if ((a_fs_file->name->name_size >= 2)
+        && (a_fs_file->name->name[0] == '.')
+        && ((a_fs_file->name->name[1] == '\0')
+            || ((a_fs_file->name->name_size > 2)
+                && (a_fs_file->name->name[1] == '.')
+                && (a_fs_file->name->name[2] == '\0'))))
+        return 1;
+    else
+        return 0;
+}
+
+int isDir(TSK_FS_FILE * a_fs_file)
+{
+    if ((a_fs_file) && (a_fs_file->name)) {
+        if (TSK_FS_IS_DIR_NAME(a_fs_file->name->type)){
+            return 1;
+        }
+        else if (a_fs_file->name->type == TSK_FS_NAME_TYPE_UNDEF) {
+            if ((a_fs_file->meta)
+                && (TSK_FS_IS_DIR_META(a_fs_file->meta->type))){
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+
 
 /** \internal
 * Allocate a FS_DIR structure to load names into.
@@ -585,6 +619,17 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     tsk_error_print(stderr);
                 tsk_error_reset();
             }
+
+            if(fs_file->fs_info->ftype==TSK_FS_TYPE_EXT4){
+                if(isDir(fs_file) & !isDotDir(fs_file)){
+                if(fs_file->meta->size==0){
+                    if(ext4_jrecover(fs_file->fs_info, fs_file->meta, fs_file->meta->addr)){
+                        return TSK_WALK_STOP;
+                    }
+                }
+            }
+        }
+
         }
 
         // call the action if we have the right flags.
