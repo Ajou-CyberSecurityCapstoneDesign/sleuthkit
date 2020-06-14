@@ -359,7 +359,7 @@ TSK_RETVAL_ENUM TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
             {
                 EXT2FS_INFO* ext2fs = (EXT2FS_INFO*)fs_file->fs_info;
                 if(ext4_jrecover(fs_file->fs_info, fs_file->meta, fs_file->meta->addr)){
-                   
+                   return TSK_OK;
                 }
                 if (m_reportOption)
                 {
