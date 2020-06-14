@@ -311,6 +311,16 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
             fbuf[i] = '^';
     }
 
+    //이미 존재하는 파일 인지 확인
+    int isAccess = access(fbuf, 0);
+    int AccessCount = 0;
+    char tmp[2]="";
+    while(isAccess==0 & AccessCount <10){
+        AccessCount = AccessCount+1;
+        sprintf(tmp,"%d",AccessCount);
+        strcat(fbuf,tmp);
+        isAccess=access(fbuf,0);
+    }
 
     // open the file
     if ((hFile = fopen(fbuf, "w+")) == NULL) {
