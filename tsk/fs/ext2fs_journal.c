@@ -795,37 +795,31 @@ ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
 
     unsigned int tmp;
     tmp=recover_seq;
-    strncpy(recover_meta->i_mode, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
+    memcpy(recover_meta->i_mode, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
     tmp+=sizeof(uint16_t);
-    strncpy(recover_meta->i_uid, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
+    memcpy(recover_meta->i_uid, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
     tmp+=sizeof(uint16_t);
-    //strncpy(recover_meta->i_size, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
-    //tmp+=sizeof(uint32_t);
-    for (int j = 0; j < 4; j++) {
-        recover_meta->i_size[j] = *(&journ[end * jinfo->bsize] + tmp);
-        tmp += sizeof(uint8_t);
-    }
+    memcpy(recover_meta->i_size, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
 
-    strncpy(recover_meta->i_atime, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    memcpy(recover_meta->i_atime, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
-    strncpy(recover_meta->i_ctime, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    memcpy(recover_meta->i_ctime, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
-    strncpy(recover_meta->i_mtime, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    memcpy(recover_meta->i_mtime, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
-    strncpy(recover_meta->i_dtime, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    memcpy(recover_meta->i_dtime, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
-    strncpy(recover_meta->i_gid, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
+    memcpy(recover_meta->i_gid, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
     tmp+=sizeof(uint16_t);
-    strncpy(recover_meta->i_nlink, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
+    memcpy(recover_meta->i_nlink, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
     tmp+=sizeof(uint16_t);
-    strncpy(recover_meta->i_nblk, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    memcpy(recover_meta->i_nblk, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
-    for (int j = 0; j < 4; j++) {
-        recover_meta->i_flags[j] = *(&journ[end * jinfo->bsize] + tmp);
-        tmp += sizeof(uint8_t);
-    }
+    memcpy(recover_meta->i_flags, &journ[end * jinfo->bsize] + tmp,sizeof(uint32_t));
+    tmp+=sizeof(uint32_t);
 
-    strncpy(recover_meta->i_f5, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    memcpy(recover_meta->i_f5, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
     
      for(int i=0;i<15;i++){
@@ -835,14 +829,14 @@ ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
          }
     }
   
-    strncpy(recover_meta->i_generation, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+     memcpy(recover_meta->i_generation, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
 
-    strncpy(recover_meta->i_file_acl, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    memcpy(recover_meta->i_file_acl, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
-    strncpy(recover_meta->i_size_high, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    memcpy(recover_meta->i_size_high, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
-    strncpy(recover_meta->i_faddr, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    memcpy(recover_meta->i_faddr, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
     /*
     strncpy(recover_meta->i_frag, &journ[end * jinfo->bsize]+tmp,sizeof(uint8_t));
@@ -858,21 +852,21 @@ ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
     */
 
     tmp+=sizeof(uint8_t)*12;
-    strncpy(recover_meta->i_extra_isize, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
+    memcpy(recover_meta->i_extra_isize, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
     tmp+=sizeof(uint16_t);
-    strncpy(recover_meta->i_pad1, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
+    memcpy(recover_meta->i_pad1, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
     tmp+=sizeof(uint16_t);
-    strncpy(recover_meta->i_ctime_extra, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    memcpy(recover_meta->i_ctime_extra, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
-    strncpy(recover_meta->i_mtime_extra, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    memcpy(recover_meta->i_mtime_extra, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
-    strncpy(recover_meta->i_atime_extra, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    memcpy(recover_meta->i_atime_extra, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
-    strncpy(recover_meta->i_crtime, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    memcpy(recover_meta->i_crtime, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
-    strncpy(recover_meta->i_crtime_extra, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    memcpy(recover_meta->i_crtime_extra, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
-    strncpy(recover_meta->i_version_hi, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    memcpy(recover_meta->i_version_hi, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
 
     if(!tsk_getu16(fs->endian,recover_meta->i_block)){
         return NULL;
