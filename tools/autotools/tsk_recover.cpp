@@ -368,7 +368,8 @@ TSK_RETVAL_ENUM TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
             if (fs_file->meta->time2.ext2.dtime >= recover_time || fs_file->meta->atime >= recover_time)
             {
                 EXT2FS_INFO* ext2fs = (EXT2FS_INFO*)fs_file->fs_info;
-                ext4_jrecover(fs_file->fs_info, fs_file->meta, fs_file->meta->addr);
+                if (ext4_jrecover(fs_file->fs_info, fs_file->meta, fs_file->meta->addr))
+                    return TSK_COR;
                 if (m_reportOption)
                 {
                     uint32_t recover_grp = (fs_file->meta->addr - 1) / tsk_getu32(fs_file->fs_info->endian, ext2fs->fs->s_inodes_per_group);
