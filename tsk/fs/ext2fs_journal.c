@@ -872,6 +872,16 @@ ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
         return NULL;
     }
 
+    int isNotNull=0;
+    for (int i = 2; i < 15; i++)
+    {
+        if(tsk_getu32(fs->endian,recover_meta->i_block[i])){
+            isNotNull =1;
+        }
+    }
+    if(isNotNull==0)
+        return NULL;
+
     return recover_meta;
 }
 
