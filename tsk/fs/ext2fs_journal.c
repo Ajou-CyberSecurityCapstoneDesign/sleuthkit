@@ -799,8 +799,13 @@ ext2fs_inode *ext2fs_journal_get_meta(TSK_FS_INFO * fs, int flags,
     tmp+=sizeof(uint16_t);
     strncpy(recover_meta->i_uid, &journ[end * jinfo->bsize]+tmp,sizeof(uint16_t));
     tmp+=sizeof(uint16_t);
-    strncpy(recover_meta->i_size, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
-    tmp+=sizeof(uint32_t);
+    //strncpy(recover_meta->i_size, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
+    //tmp+=sizeof(uint32_t);
+    for (int j = 0; j < 4; j++) {
+        recover_meta->i_size[j] = *(&journ[end * jinfo->bsize] + tmp);
+        tmp += sizeof(uint8_t);
+    }
+
     strncpy(recover_meta->i_atime, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));
     tmp+=sizeof(uint32_t);
     strncpy(recover_meta->i_ctime, &journ[end * jinfo->bsize]+tmp,sizeof(uint32_t));

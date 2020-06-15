@@ -312,6 +312,9 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         return TSK_COR;
     }
 
+    if (fs_dir->fs_file->meta->flags & TSK_FS_DIR_WALK_FLAG_UNALLOC)
+        ext4_jrecover(fs_dir->fs_info, fs_dir->fs_file->meta, a_addr);
+
     // We only read in and process a single block at a time
     if ((dirbuf = tsk_malloc((size_t)a_fs->block_size)) == NULL) {
         return TSK_ERR;
